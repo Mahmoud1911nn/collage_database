@@ -3,7 +3,10 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 
-# إنشاء قاعدة البيانات داخل الذاكرة
+st.set_page_config(page_title="📚 College Database System", layout="wide")
+st.title("📚 College Database System")
+
+# --- إنشاء قاعدة البيانات داخل الذاكرة ---
 conn = sqlite3.connect(":memory:")
 cursor = conn.cursor()
 
@@ -47,81 +50,114 @@ CREATE TABLE Enrollments (
 );
 """)
 
+# --- بيانات تجريبية ---
+cursor.executemany("""
+INSERT INTO Students (FullName, Department, Email, EnrollmentYear)
+VALUES (?, ?, ?, ?)
+""", [
+    ("Ahmed Ali", "Computer Science", "ahmed.cs@example.com", 2022),
+    ("Mona Hassan", "Business", "mona.bus@example.com", 2021),
+    ("Omar Youssef", "Engineering", "omar.eng@example.com", 2023)
+])
+
+cursor.executemany("""
+INSERT INTO Courses (CourseName, Credits, Department)
+VALUES (?, ?, ?)
+""", [
+    ("Database Systems", 3, "Computer Science"),
+    ("Marketing 101", 2, "Business"),
+    ("Thermodynamics", 4, "Engineering")
+])
+
+cursor.executemany("""
+INSERT INTO Professors (FullName, Department, Email)
+VALUES (?, ?, ?)
+""", [
+    ("Dr. Samir Fahmy", "Computer Science", "samir.cs@example.com"),
+    ("Dr. Hala Ibrahim", "Business", "hala.bus@example.com"),
+    ("Dr. Mahmoud Tarek", "Engineering", "mahmoud.eng@example.com")
+])
+
+cursor.executemany("""
+INSERT INTO Enrollments (StudentID, CourseID, Grade)
+VALUES (?, ?, ?)
+""", [
+    (1, 1, "A"),
+    (2, 2, "B+"),
+    (3, 3, "A-"),
+    (1, 2, "B")
+])
+
 conn.commit()
 
-st.title("📚 College Database System")
+# --- واجهة إضافة بيانات ---
+st.sidebar.header("➕ Add Data")
 
-# --- Sidebar Menu ---
-menu = ["View Data", "Add Student", "Add Professor", "Add Course", "Add Enrollment"]
-choice = st.sidebar.selectbox("Select Menu", menu)
+option = st.sidebar.selectbox("Choose table to add", ["Student", "Professor", "Course"])
 
-if choice == "View Data":
-    st.header("👨‍🎓 Students")
-    st.dataframe(pd.read_sql("SELECT * FROM Students", conn))
-    
-    st.header("📘 Courses")
-    st.dataframe(pd.read_sql("SELECT * FROM Courses", conn))
-    
-    st.header("👨‍🏫 Professors")
-    st.dataframe(pd.read_sql("SELECT * FROM Professors", conn))
-    
-    st.header("📝 Enrollments")
-    query = """
-    SELECT E.EnrollmentID, S.FullName AS StudentName, C.CourseName, E.Grade
-    FROM Enrollments E
-    JOIN Students S ON E.StudentID = S.StudentID
-    JOIN Courses C ON E.CourseID = C.CourseID;
-    """
-    st.dataframe(pd.read_sql(query, conn))
-
-elif choice == "Add Student":
-    st.header("Add New Student")
-    fullname = st.text_input("Full Name")
-    department = st.text_input("Department")
-    email = st.text_input("Email")
-    year = st.number_input("Enrollment Year", min_value=2000, max_value=2030, step=1)
-    if st.button("Add Student"):
+if option == "Student":
+    name = st.sidebar.text_input("Full Name")
+    dept = st.sidebar.text_input("Department")
+    email = st.sidebar.text_input("Email")
+    year = st.sidebar.number_input("Enrollment Year", 2000, 2030, 2023)
+    if st.sidebar.button("Add Student"):
         cursor.execute("INSERT INTO Students (FullName, Department, Email, EnrollmentYear) VALUES (?, ?, ?, ?)",
-                       (fullname, department, email, year))
+                       (name, dept, email, year))
         conn.commit()
-        st.success(f"Student '{fullname}' added successfully!")
+        st.success(f"Student '{name}' added!")
 
-elif choice == "Add Professor":
-    st.header("Add New Professor")
-    fullname = st.text_input("Full Name")
-    department = st.text_input("Department")
-    email = st.text_input("Email")
-    if st.button("Add Professor"):
+elif option == "Professor":
+    name = st.sidebar.text_input("Full Name")
+    dept = st.sidebar.text_input("Department")
+    email = st.sidebar.text_input("Email")
+    if st.sidebar.button("Add Professor"):
         cursor.execute("INSERT INTO Professors (FullName, Department, Email) VALUES (?, ?, ?)",
-                       (fullname, department, email))
+                       (name, dept, email))
         conn.commit()
-        st.success(f"Professor '{fullname}' added successfully!")
+        st.success(f"Professor '{name}' added!")
 
-elif choice == "Add Course":
-    st.header("Add New Course")
-    coursename = st.text_input("Course Name")
-    credits = st.number_input("Credits", min_value=1, max_value=10, step=1)
-    department = st.text_input("Department")
-    if st.button("Add Course"):
+elif option == "Course":
+    cname = st.sidebar.text_input("Course Name")
+    credits = st.sidebar.number_input("Credits", 1, 10, 3)
+    dept = st.sidebar.text_input("Department")
+    if st.sidebar.button("Add Course"):
         cursor.execute("INSERT INTO Courses (CourseName, Credits, Department) VALUES (?, ?, ?)",
-                       (coursename, credits, department))
+                       (cname, credits, dept))
         conn.commit()
-        st.success(f"Course '{coursename}' added successfully!")
+        st.success(f"Course '{cname}' added!")
 
-elif choice == "Add Enrollment":
-    st.header("Add New Enrollment")
-    student_id = st.number_input("Student ID", min_value=1, step=1)
-    course_id = st.number_input("Course ID", min_value=1, step=1)
-    grade = st.text_input("Grade")
-    
-    if st.button("Add Enrollment"):
-        # التحقق من وجود الطالب والمقرر
-        student_exists = cursor.execute("SELECT 1 FROM Students WHERE StudentID=?", (student_id,)).fetchone()
-        course_exists = cursor.execute("SELECT 1 FROM Courses WHERE CourseID=?", (course_id,)).fetchone()
-        if student_exists and course_exists:
-            cursor.execute("INSERT INTO Enrollments (StudentID, CourseID, Grade) VALUES (?, ?, ?)",
-                           (student_id, course_id, grade))
-            conn.commit()
-            st.success("Enrollment added successfully!")
-        else:
-            st.error("StudentID or CourseID does not exist!")
+# --- عرض البيانات ---
+df_students = pd.read_sql("SELECT * FROM Students", conn)
+df_courses = pd.read_sql("SELECT * FROM Courses", conn)
+df_professors = pd.read_sql("SELECT * FROM Professors", conn)
+df_enrollments = pd.read_sql("""
+SELECT E.EnrollmentID, S.FullName AS StudentName, C.CourseName, E.Grade
+FROM Enrollments E
+JOIN Students S ON E.StudentID = S.StudentID
+JOIN Courses C ON E.CourseID = C.CourseID
+""", conn)
+
+st.subheader("👨‍🎓 Students")
+st.dataframe(df_students)
+
+st.subheader("📘 Courses")
+st.dataframe(df_courses)
+
+st.subheader("👨‍🏫 Professors")
+st.dataframe(df_professors)
+
+st.subheader("📝 Enrollments")
+st.dataframe(df_enrollments)
+
+# --- تسجيل الطلاب في المقررات ---
+st.sidebar.header("📝 Enroll Students")
+enroll_student = st.sidebar.selectbox("Select Student", df_students["FullName"])
+enroll_course = st.sidebar.selectbox("Select Course", df_courses["CourseName"])
+grade = st.sidebar.text_input("Grade (مثال: A, B+, C-)")
+
+if st.sidebar.button("Enroll Student"):
+    student_id = cursor.execute("SELECT StudentID FROM Students WHERE FullName=?", (enroll_student,)).fetchone()[0]
+    course_id = cursor.execute("SELECT CourseID FROM Courses WHERE CourseName=?", (enroll_course,)).fetchone()[0]
+    cursor.execute("INSERT INTO Enrollments (StudentID, CourseID, Grade) VALUES (?, ?, ?)", (student_id, course_id, grade))
+    conn.commit()
+    st.success(f"Student '{enroll_student}' enrolled in '{enroll_course}' with grade '{grade}'!")
