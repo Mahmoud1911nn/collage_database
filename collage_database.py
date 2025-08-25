@@ -102,18 +102,18 @@ conn.commit()
 
 # عرض كل الطلاب
 df_students = pd.read_sql("SELECT * FROM Students", conn)
-print("📌 الطلاب:")
+st.write("📌 الطلاب:")
 st.dataframe(df_students)
 
 # عرض كل المقررات
 df_courses = pd.read_sql("SELECT * FROM Courses", conn)
-print("📌 المقررات:")
-display(df_courses)
+st.write("📌 المقررات:")
+st.dataframe(df_courses)
 
 # عرض كل الأساتذة
 df_professors = pd.read_sql("SELECT * FROM Professors", conn)
-print("📌 الأساتذة:")
-display(df_professors)
+st.write("📌 الأساتذة:")
+st.dataframe(df_professors)
 
 # عرض تسجيلات الطلاب مع تفاصيل المقررات
 query = """
