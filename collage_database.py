@@ -103,7 +103,7 @@ conn.commit()
 # عرض كل الطلاب
 df_students = pd.read_sql("SELECT * FROM Students", conn)
 print("📌 الطلاب:")
-display(df_students)
+st.dataframe(df_students)
 
 # عرض كل المقررات
 df_courses = pd.read_sql("SELECT * FROM Courses", conn)
