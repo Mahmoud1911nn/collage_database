@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
+import streamlit as st
 import sqlite3
 import pandas as pd
-import streamlit as st
 
-# إنشاء قاعدة بيانات داخل الذاكرة
+# إنشاء قاعدة البيانات داخل الذاكرة
 conn = sqlite3.connect(":memory:")
 cursor = conn.cursor()
 
-# جدول الطلاب
+# --- إنشاء الجداول ---
 cursor.execute("""
 CREATE TABLE Students (
     StudentID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -18,7 +18,6 @@ CREATE TABLE Students (
 );
 """)
 
-# جدول المقررات
 cursor.execute("""
 CREATE TABLE Courses (
     CourseID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,7 +27,6 @@ CREATE TABLE Courses (
 );
 """)
 
-# جدول الأساتذة
 cursor.execute("""
 CREATE TABLE Professors (
     ProfessorID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,7 +36,6 @@ CREATE TABLE Professors (
 );
 """)
 
-# جدول تسجيل المقررات
 cursor.execute("""
 CREATE TABLE Enrollments (
     EnrollmentID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,71 +47,81 @@ CREATE TABLE Enrollments (
 );
 """)
 
-# إدخال بيانات تجريبية
-cursor.executemany("""
-INSERT INTO Students (FullName, Department, Email, EnrollmentYear)
-VALUES (?, ?, ?, ?)
-""", [
-    ("Ahmed Ali", "Computer Science", "ahmed.cs@example.com", 2022),
-    ("Mona Hassan", "Business", "mona.bus@example.com", 2021),
-    ("Omar Youssef", "Engineering", "omar.eng@example.com", 2023)
-])
-
-cursor.executemany("""
-INSERT INTO Courses (CourseName, Credits, Department)
-VALUES (?, ?, ?)
-""", [
-    ("Database Systems", 3, "Computer Science"),
-    ("Marketing 101", 2, "Business"),
-    ("Thermodynamics", 4, "Engineering")
-])
-
-cursor.executemany("""
-INSERT INTO Professors (FullName, Department, Email)
-VALUES (?, ?, ?)
-""", [
-    ("Dr. Samir Fahmy", "Computer Science", "samir.cs@example.com"),
-    ("Dr. Hala Ibrahim", "Business", "hala.bus@example.com"),
-    ("Dr. Mahmoud Tarek", "Engineering", "mahmoud.eng@example.com")
-])
-
-cursor.executemany("""
-INSERT INTO Enrollments (StudentID, CourseID, Grade)
-VALUES (?, ?, ?)
-""", [
-    (1, 1, "A"),
-    (2, 2, "B+"),
-    (3, 3, "A-"),
-    (1, 2, "B")
-])
-
 conn.commit()
 
-# ---------------------------
-# واجهة Streamlit
-# ---------------------------
 st.title("📚 College Database System")
 
-st.header("👨‍🎓 Students")
-df_students = pd.read_sql("SELECT * FROM Students", conn)
-st.dataframe(df_students)
+# --- Sidebar Menu ---
+menu = ["View Data", "Add Student", "Add Professor", "Add Course", "Add Enrollment"]
+choice = st.sidebar.selectbox("Select Menu", menu)
 
-st.header("📘 Courses")
-df_courses = pd.read_sql("SELECT * FROM Courses", conn)
-st.dataframe(df_courses)
+if choice == "View Data":
+    st.header("👨‍🎓 Students")
+    st.dataframe(pd.read_sql("SELECT * FROM Students", conn))
+    
+    st.header("📘 Courses")
+    st.dataframe(pd.read_sql("SELECT * FROM Courses", conn))
+    
+    st.header("👨‍🏫 Professors")
+    st.dataframe(pd.read_sql("SELECT * FROM Professors", conn))
+    
+    st.header("📝 Enrollments")
+    query = """
+    SELECT E.EnrollmentID, S.FullName AS StudentName, C.CourseName, E.Grade
+    FROM Enrollments E
+    JOIN Students S ON E.StudentID = S.StudentID
+    JOIN Courses C ON E.CourseID = C.CourseID;
+    """
+    st.dataframe(pd.read_sql(query, conn))
 
-st.header("👩‍🏫 Professors")
-df_professors = pd.read_sql("SELECT * FROM Professors", conn)
-st.dataframe(df_professors)
+elif choice == "Add Student":
+    st.header("Add New Student")
+    fullname = st.text_input("Full Name")
+    department = st.text_input("Department")
+    email = st.text_input("Email")
+    year = st.number_input("Enrollment Year", min_value=2000, max_value=2030, step=1)
+    if st.button("Add Student"):
+        cursor.execute("INSERT INTO Students (FullName, Department, Email, EnrollmentYear) VALUES (?, ?, ?, ?)",
+                       (fullname, department, email, year))
+        conn.commit()
+        st.success(f"Student '{fullname}' added successfully!")
 
-st.header("📝 Enrollments")
-query = """
-SELECT
-    E.EnrollmentID, S.FullName AS StudentName, C.CourseName, E.Grade
-FROM
-    Enrollments E
-JOIN Students S ON E.StudentID = S.StudentID
-JOIN Courses C ON E.CourseID = C.CourseID;
-"""
-df_enrollments = pd.read_sql(query, conn)
-st.dataframe(df_enrollments)
+elif choice == "Add Professor":
+    st.header("Add New Professor")
+    fullname = st.text_input("Full Name")
+    department = st.text_input("Department")
+    email = st.text_input("Email")
+    if st.button("Add Professor"):
+        cursor.execute("INSERT INTO Professors (FullName, Department, Email) VALUES (?, ?, ?)",
+                       (fullname, department, email))
+        conn.commit()
+        st.success(f"Professor '{fullname}' added successfully!")
+
+elif choice == "Add Course":
+    st.header("Add New Course")
+    coursename = st.text_input("Course Name")
+    credits = st.number_input("Credits", min_value=1, max_value=10, step=1)
+    department = st.text_input("Department")
+    if st.button("Add Course"):
+        cursor.execute("INSERT INTO Courses (CourseName, Credits, Department) VALUES (?, ?, ?)",
+                       (coursename, credits, department))
+        conn.commit()
+        st.success(f"Course '{coursename}' added successfully!")
+
+elif choice == "Add Enrollment":
+    st.header("Add New Enrollment")
+    student_id = st.number_input("Student ID", min_value=1, step=1)
+    course_id = st.number_input("Course ID", min_value=1, step=1)
+    grade = st.text_input("Grade")
+    
+    if st.button("Add Enrollment"):
+        # التحقق من وجود الطالب والمقرر
+        student_exists = cursor.execute("SELECT 1 FROM Students WHERE StudentID=?", (student_id,)).fetchone()
+        course_exists = cursor.execute("SELECT 1 FROM Courses WHERE CourseID=?", (course_id,)).fetchone()
+        if student_exists and course_exists:
+            cursor.execute("INSERT INTO Enrollments (StudentID, CourseID, Grade) VALUES (?, ?, ?)",
+                           (student_id, course_id, grade))
+            conn.commit()
+            st.success("Enrollment added successfully!")
+        else:
+            st.error("StudentID or CourseID does not exist!")
