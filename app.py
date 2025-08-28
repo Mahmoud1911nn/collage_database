@@ -6,7 +6,7 @@ import pandas as pd
 conn = sqlite3.connect("collage.db")
 cursor = conn.cursor()
 
-# إنشاء الجداول لو مش موجودة
+# إنشاء الجداول
 cursor.executescript("""
 CREATE TABLE Students (
     StudentID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -171,4 +171,5 @@ elif menu == "Enrollments":
     if st.button("Delete Enrollment"):
         delete_record("Enrollments", eid_del, "EnrollmentID")
         st.warning("Enrollment Deleted!")
+
 
