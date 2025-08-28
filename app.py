@@ -8,26 +8,26 @@ cursor = conn.cursor()
 
 # إنشاء الجداول لو مش موجودة
 cursor.executescript("""
-CREATE TABLE IF NOT EXISTS Students (
+CREATE TABLE Students (
     StudentID INTEGER PRIMARY KEY AUTOINCREMENT,
     FullName TEXT NOT NULL,
     Age INTEGER,
     Major TEXT
 );
 
-CREATE TABLE IF NOT EXISTS Professors (
+CREATE TABLE  Professors (
     ProfessorID INTEGER PRIMARY KEY AUTOINCREMENT,
     FullName TEXT NOT NULL,
     Department TEXT
 );
 
-CREATE TABLE IF NOT EXISTS Courses (
+CREATE TABLE  Courses (
     CourseID INTEGER PRIMARY KEY AUTOINCREMENT,
     CourseName TEXT NOT NULL,
     Credits INTEGER
 );
 
-CREATE TABLE IF NOT EXISTS Enrollments (
+CREATE TABLE  Enrollments (
     EnrollmentID INTEGER PRIMARY KEY AUTOINCREMENT,
     StudentID INTEGER,
     CourseID INTEGER,
@@ -171,3 +171,4 @@ elif menu == "Enrollments":
     if st.button("Delete Enrollment"):
         delete_record("Enrollments", eid_del, "EnrollmentID")
         st.warning("Enrollment Deleted!")
+
